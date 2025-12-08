@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7e26c00bbc5bf984fa1c68a6c5e336d3, type: 3}
+  m_Name: Trapper
+  m_EditorClassIdentifier: 
+  displayName: Trapper
+  icon: {fileID: 4511903343146199194, guid: 2e54447eebd2c774c89b4aa36cf6787b, type: 3}
+  cost: 250
+  description: 'Reduces the fish''s Shake
+
+'
+  effect: 3

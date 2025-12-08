@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 08a0b7de62e59fb4599b8ea9091e8eb7, type: 3}
+  m_Name: Seal
+  m_EditorClassIdentifier: 
+  fishName: Seal
+  sprite: {fileID: 21300000, guid: b87ef135dc3b9d14899ad05846926b06, type: 3}
+  minKg: 10
+  maxKg: 35
+  price: 500
+  baseChancePercent: 2
+  description: "A playful aquatic mammal that definitely shouldn\u2019t be in a river,
+    but enjoys the free food. Fast, slippery, and very smart."
+  tagline: "He\u2019s not a fish\u2026 but he won\u2019t tell if you don\u2019t."
+  rarity: 3

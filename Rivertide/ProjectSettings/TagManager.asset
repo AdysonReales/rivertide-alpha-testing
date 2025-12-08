@@ -1,0 +1,75 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!78 &1
+TagManager:
+  serializedVersion: 3
+  tags: []
+  layers:
+  - Default
+  - TransparentFX
+  - Ignore Raycast
+  - player
+  - Water
+  - UI
+  - WorldUI
+  - ShopUI
+  - DisplayUI
+  - bg
+  - clouds
+  - mountains
+  - waterfall
+  - ground
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  m_SortingLayers:
+  - name: Default
+    uniqueID: 0
+    locked: 0
+  - name: 1bg
+    uniqueID: 808970519
+    locked: 0
+  - name: 2clouds
+    uniqueID: 203865619
+    locked: 0
+  - name: 3mountains
+    uniqueID: 3462701509
+    locked: 0
+  - name: waterfall
+    uniqueID: 4214686663
+    locked: 0
+  - name: 4ground
+    uniqueID: 3324846481
+    locked: 0
+  - name: river
+    uniqueID: 3340906295
+    locked: 0
+  - name: WorldUI
+    uniqueID: 2998667395
+    locked: 0
+  - name: ShopUI
+    uniqueID: 1431898027
+    locked: 0
+  - name: DisplayUI
+    uniqueID: 3947766571
+    locked: 0
+  - name: player
+    uniqueID: 1401639291
+    locked: 0
+  m_RenderingLayers:
+  - Default

@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 08a0b7de62e59fb4599b8ea9091e8eb7, type: 3}
+  m_Name: Salmon
+  m_EditorClassIdentifier: 
+  fishName: Salmon
+  sprite: {fileID: 21300000, guid: ae236d5bd9a1c344b9600c96599605e6, type: 3}
+  minKg: 1
+  maxKg: 3.5
+  price: 18
+  baseChancePercent: 20
+  description: A strong upstream swimmer known for migrating long distances. Muscular,
+    fast, and built for endurance.
+  tagline: Training for a marathon it never signed up for.
+  rarity: 0
+  baseSpeed: 1
+  sellRate: 10
