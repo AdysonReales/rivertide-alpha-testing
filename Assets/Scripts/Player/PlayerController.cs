@@ -4,7 +4,6 @@ using TMPro;
 [RequireComponent(typeof(Rigidbody2D))]
 public class PlayerController : MonoBehaviour
 {
-    
     [Header("Movement")]
     public float speed = 5f;
     private Rigidbody2D rb;
@@ -15,54 +14,87 @@ public class PlayerController : MonoBehaviour
 
     [Header("Interact UI")]
     public TMP_Text interactText;
-
     private IInteractable currentInteractable;
+
+    // ---------- CAMERA ----------
+    [Header("Camera Follow")]
+    public Transform cameraTransform;      // Drag Main Camera here
+    public float cameraSmoothSpeed = 0.15f;
+    private Vector3 cameraOffset;
+    // ----------------------------
 
     private void Awake()
     {
         animator = GetComponent<Animator>();
         rb = GetComponent<Rigidbody2D>();
         sr = GetComponent<SpriteRenderer>();
-        if (interactText != null) interactText.gameObject.SetActive(false);
+
+        if (interactText != null)
+            interactText.gameObject.SetActive(false);
     }
 
-   private void Update()
-{
-    moveInput = 0f;
-
-    // Stop player input if movement is disabled
-    if (!canMove) 
+    private void Start()
     {
-        animator.SetBool("isMoving", false); // stop walking animation
-        return;
+        if (cameraTransform != null)
+        {
+            cameraOffset = cameraTransform.position - transform.position;
+        }
+        else
+        {
+            Debug.LogWarning("PlayerController: Camera Transform not assigned!");
+        }
     }
 
-    // Horizontal movement
-    if (Input.GetKey(KeyCode.A))
+    private void Update()
     {
-        moveInput = -1f;
-        sr.flipX = true;
-    }
+        moveInput = 0f;
 
-    if (Input.GetKey(KeyCode.D))
-    {
-        moveInput = 1f;
-        sr.flipX = false;
-    }
+        if (!canMove)
+        {
+            animator.SetBool("isMoving", false);
+            return;
+        }
 
-    // Set walking animation
-    animator.SetBool("isMoving", moveInput != 0);
+        // Horizontal movement
+        if (Input.GetKey(KeyCode.A))
+        {
+            moveInput = -1f;
+            sr.flipX = true;
+        }
 
-    // Interact
-    if (Input.GetKeyDown(KeyCode.E) && currentInteractable != null)
-    {
-        currentInteractable.OnInteract();
+        if (Input.GetKey(KeyCode.D))
+        {
+            moveInput = 1f;
+            sr.flipX = false;
+        }
+
+        animator.SetBool("isMoving", moveInput != 0);
+
+        // Interact
+        if (Input.GetKeyDown(KeyCode.E) && currentInteractable != null)
+        {
+            currentInteractable.OnInteract();
+        }
     }
-}
 
     private void FixedUpdate()
     {
         rb.linearVelocity = new Vector2(moveInput * speed, rb.linearVelocity.y);
+    }
+
+    // Camera movement AFTER player moves (prevents jitter)
+    private void LateUpdate()
+    {
+        if (cameraTransform == null) return;
+
+        Vector3 targetPos = transform.position + cameraOffset;
+        targetPos.z = cameraTransform.position.z; // keep camera Z fixed
+
+        cameraTransform.position = Vector3.Lerp(
+            cameraTransform.position,
+            targetPos,
+            cameraSmoothSpeed
+        );
     }
 
     public void ShowInteract(string text)
