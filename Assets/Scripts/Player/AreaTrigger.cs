@@ -21,7 +21,7 @@ public class AreaTrigger : MonoBehaviour, IInteractable
         switch (areaType)
         {
             case AreaType.River:
-                SceneManager.LoadScene("Fishing");
+                SceneManager.LoadScene("3DFishing");
                 break;
             case AreaType.Shop:
                 UIManager.Instance.OpenShop();

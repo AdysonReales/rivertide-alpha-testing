@@ -15,7 +15,6 @@ public class FishingManager : MonoBehaviour
     public Transform spawnArea;
     public List<FishData> allFishData;
     
-    // Helper for UI transition
     public FishInstance lastCaughtFish; 
 
     [Header("Upgrades (Loaded from GameManager)")]
@@ -24,7 +23,7 @@ public class FishingManager : MonoBehaviour
     public float rageBaitBonusPercent = 0f;
 
     [Header("Amount of Fish")]
-    public float amountFish = 0f;
+    public int amountFish = 5; // Changed to int for the loop
     
     public bool baitEquipped = false;
     public bool magnetEquipped = false;
@@ -34,14 +33,12 @@ public class FishingManager : MonoBehaviour
     public bool barbedHookEquipped = false;
 
     private List<FishMovement> activeFish = new List<FishMovement>();
-    
-    // --- UPDATED: LIST FOR BARBED HOOK ---
     private List<FishMovement> currentCaughtFishes = new List<FishMovement>();
     
     private PullMinigame pullMinigame;
     private Rect swimRect;
+    private bool is3D = false; // Internal flag to handle 3D positioning
 
-    // Item Names must match ShopItemData DisplayNames exactly
     const string ITEM_BAIT = "Bait";
     const string ITEM_MAGNET = "Magnet";
     const string ITEM_RAGE = "Rage Bait"; 
@@ -57,10 +54,8 @@ public class FishingManager : MonoBehaviour
 
     private void Start()
     {
-        // 1. LOAD UPGRADES & CHECK COUNTS
         if (GameManager.Instance != null)
         {
-            // Check if we have stock (> 0) to equip the item
             baitEquipped = GameManager.Instance.GetItemCount(ITEM_BAIT) > 0;
             magnetEquipped = GameManager.Instance.GetItemCount(ITEM_MAGNET) > 0;
             rageEquipped = GameManager.Instance.GetItemCount(ITEM_RAGE) > 0;
@@ -68,38 +63,61 @@ public class FishingManager : MonoBehaviour
             spinnerEquipped = GameManager.Instance.GetItemCount(ITEM_SPINNER) > 0;
             barbedHookEquipped = GameManager.Instance.GetItemCount(ITEM_HOOK) > 0;
 
-            // Apply Stats
             if (magnetEquipped) magnetBonusPercent = 15f;
-            if (rageEquipped) rageBaitBonusPercent = 25f; 
-            if (rageEquipped) ragetailBonusPercent = 10f; 
+            if (rageEquipped) { rageBaitBonusPercent = 25f; ragetailBonusPercent = 10f; }
         }
 
-        // 2. SET HOOK CAPACITY
-        if (barbedHookEquipped) hook.capacity = 3; 
-        else hook.capacity = 1;
-
-        // 3. SETUP SPAWN AREA
-        var col = spawnArea.GetComponent<BoxCollider2D>();
-        if (col != null)
+        if (hook != null)
         {
-            Vector3 size = col.size;
-            Vector3 pos = spawnArea.position;
-            swimRect = new Rect(pos.x - size.x / 2f, pos.y - size.y / 2f, size.x, size.y);
+            if (barbedHookEquipped) hook.capacity = 3; 
+            else hook.capacity = 1;
         }
 
-        // 4. SPAWN FISH
+        // --- HYBRID 2D/3D SPAWN AREA SETUP ---
+        if (spawnArea != null)
+        {
+            // Try 3D first
+            var col3D = spawnArea.GetComponent<BoxCollider>();
+            var col2D = spawnArea.GetComponent<BoxCollider2D>();
+
+            if (col3D != null)
+            {
+                is3D = true;
+                Vector3 size = col3D.size;
+                Vector3 pos = spawnArea.position;
+                // In 3D, we usually use X and Z for the area (top down view)
+                swimRect = new Rect(pos.x - size.x / 2f, pos.z - size.z / 2f, size.x, size.z);
+            }
+            else if (col2D != null)
+            {
+                is3D = false;
+                Vector3 size = col2D.size;
+                Vector3 pos = spawnArea.position;
+                swimRect = new Rect(pos.x - size.x / 2f, pos.y - size.y / 2f, size.x, size.y);
+            }
+            else
+            {
+                Debug.LogError("FishingManager: SpawnArea needs a BoxCollider (3D) or BoxCollider2D!");
+            }
+        }
+
+        // SPAWN FISH (Safely)
         for (int i = 0; i < amountFish; i++) SpawnRandomFish();
 
-        ui.ShowPrompt("Hold F or Left Click to Cast");
+        if (ui != null) ui.ShowPrompt("Hold F or Left Click to Cast");
 
-        // 5. REGISTER EVENTS
-        hook.OnFishCaught += OnFishCaught;
-        hook.OnHookReturned += OnHookReturned;
-        hook.OnFishLanded += OnFishLanded;
+        if (hook != null)
+        {
+            hook.OnFishCaught += OnFishCaught;
+            hook.OnHookReturned += OnHookReturned;
+            hook.OnFishLanded += OnFishLanded;
+        }
     }
 
     private void Update()
     {
+        if (hook == null || ui == null) return;
+
         if ((Input.GetKeyDown(KeyCode.F) || Input.GetMouseButtonDown(0)) && hook.state == HookController.HookState.Idle)
         {
             ui.HidePrompt();
@@ -107,13 +125,10 @@ public class FishingManager : MonoBehaviour
         }
     }
 
-    // --- HANDLE CATCHING MULTIPLE FISH ---
     private void OnFishCaught(List<FishMovement> fishes)
     {
-        // Copy the list from the hook
         currentCaughtFishes = new List<FishMovement>(fishes); 
 
-        // Lock visual position
         foreach(var f in currentCaughtFishes)
         {
             f.LockToHook(hook.transform);
@@ -122,7 +137,6 @@ public class FishingManager : MonoBehaviour
         pullMinigame = gameObject.GetComponent<PullMinigame>();
         if (pullMinigame == null) pullMinigame = gameObject.AddComponent<PullMinigame>();
 
-        // Calculate difficulty based on the TOUGHEST fish in the group
         float maxDuration = 0f;
         foreach(var f in currentCaughtFishes)
         {
@@ -130,14 +144,7 @@ public class FishingManager : MonoBehaviour
             if(d > maxDuration) maxDuration = d;
         }
 
-        pullMinigame.StartMinigame(
-            hook,
-            allowHoldMode: false,
-            power: 1f,
-            successCallback: OnPullSuccess,
-            failCallback: OnPullFail,
-            struggleDuration: maxDuration
-        );
+        pullMinigame.StartMinigame(hook, false, 1f, OnPullSuccess, OnPullFail, maxDuration);
     }
 
     private float GetStruggleDurationByRarity(FishData.Rarity rarity)
@@ -148,34 +155,30 @@ public class FishingManager : MonoBehaviour
             case FishData.Rarity.Uncommon: return 4f;
             case FishData.Rarity.Rare: return 3f;
             case FishData.Rarity.UltraRare: return 2f;
+            default: return 5f;
         }
-        return 5f;
     }
 
     private void OnPullSuccess()
     {
         if (currentCaughtFishes.Count == 0) return;
 
-        // 1. Pick the first fish to show on the summary screen (UI)
         float firstWeight = Random.Range(currentCaughtFishes[0].data.minKg, currentCaughtFishes[0].data.maxKg);
         FishInstance displayFish = new FishInstance(currentCaughtFishes[0].data, firstWeight);
         LastCaughtFish.fish = displayFish; 
 
         if (GameManager.Instance != null)
         {
-            // 2. Add ALL caught fish to inventory
             foreach(var fishMove in currentCaughtFishes)
             {
                 float weight = Random.Range(fishMove.data.minKg, fishMove.data.maxKg);
                 FishInstance fi = new FishInstance(fishMove.data, weight);
                 GameManager.Instance.playerInventory.AddFish(fi);
                 
-                // Destroy scene objects
                 activeFish.Remove(fishMove);
                 Destroy(fishMove.gameObject, 0.1f);
             }
 
-            // 3. Consume Used Items (Subtract 1 from inventory)
             if (baitEquipped) GameManager.Instance.ConsumeItem(ITEM_BAIT);
             if (magnetEquipped) GameManager.Instance.ConsumeItem(ITEM_MAGNET);
             if (rageEquipped) GameManager.Instance.ConsumeItem(ITEM_RAGE);
@@ -186,18 +189,17 @@ public class FishingManager : MonoBehaviour
 
         currentCaughtFishes.Clear();
         CleanupMinigame();
-        SceneManager.LoadScene("Main");
+        SceneManager.LoadScene("3DMain");
     }
 
     private void OnPullFail()
     {
         if (currentCaughtFishes.Count > 0)
         {
-            ui.ShowEscape();
+            if (ui != null) ui.ShowEscape();
 
             if (!trapperEquipped)
             {
-                // Release all fish back to the water
                 foreach(var f in currentCaughtFishes)
                 {
                     f.StartReturnToSwim();
@@ -206,8 +208,7 @@ public class FishingManager : MonoBehaviour
             }
             currentCaughtFishes.Clear();
         }
-
-        hook.StartReturn();
+        if (hook != null) hook.StartReturn();
     }
 
     private void CleanupMinigame()
@@ -217,44 +218,69 @@ public class FishingManager : MonoBehaviour
 
     private void OnHookReturned()
     {
-        ui.ShowPrompt("Hold F or Left Click to Cast");
+        if (ui != null) ui.ShowPrompt("Hold F or Left Click to Cast");
     }
 
-    public void SpawnRandomFish()
-    {
-        if (allFishData.Count == 0) return;
+ public void SpawnRandomFish()
+{
+    // 1. SAFETY CHECKS
+    if (allFishData == null || allFishData.Count == 0) return;
+    if (fishPrefab == null || fishContainer == null || spawnArea == null) {
+        Debug.LogError("FishingManager: Check your Inspector! Prefab, Container, or SpawnArea is missing.");
+        return;
+    }
 
-        FishData pick = null;
+    // 2. PICK THE FISH DATA
+    FishData pick = allFishData[Random.Range(0, allFishData.Count)];
+    if (pick == null) return;
 
-        // BAIT LOGIC (Reroll for better rarity)
-        if (baitEquipped)
-        {
-            FishData option1 = allFishData[Random.Range(0, allFishData.Count)];
-            FishData option2 = allFishData[Random.Range(0, allFishData.Count)];
-            pick = (option1.rarity > option2.rarity) ? option1 : option2;
+    // 3. CALCULATE THE POSITION IN LOCAL SPACE
+    // We instantiate as a child FIRST, then set the local position.
+    // This forces Z to be 0 relative to the parent.
+    GameObject go = Instantiate(fishPrefab, fishContainer);
+    
+    float weight = Random.Range(pick.minKg, pick.maxKg) * (1f + ragetailBonusPercent / 100f);
+    
+    Vector3 localSpawnPos = Vector3.zero;
+
+    if (is3D) {
+        var col3D = spawnArea.GetComponent<BoxCollider>();
+        if (col3D != null) {
+            // Get a random world point inside the spawn area
+            Bounds b = col3D.bounds;
+            Vector3 randomWorldPoint = new Vector3(
+                Random.Range(b.min.x, b.max.x),
+                Random.Range(b.min.y, b.max.y),
+                fishContainer.position.z // Start with container's world Z
+            );
+
+            // CONVERT World Point to Local Point relative to the Container
+            localSpawnPos = fishContainer.InverseTransformPoint(randomWorldPoint);
+            
+            // FORCE Local Z to 0 (This is what you requested!)
+            localSpawnPos.z = 0f; 
         }
-        else
-        {
-            pick = allFishData[Random.Range(0, allFishData.Count)];
-        }
+    } else {
+        // 2D Logic
+        localSpawnPos = new Vector3(
+            Random.Range(swimRect.xMin, swimRect.xMax) - fishContainer.position.x, 
+            Random.Range(swimRect.yMin, swimRect.yMax) - fishContainer.position.y, 
+            0f
+        );
+    }
 
-        // RAGE LOGIC (Heavier Fish)
-        float weight = Random.Range(pick.minKg, pick.maxKg) * (1f + ragetailBonusPercent / 100f);
+    // 4. APPLY POSITION AND INITIALIZE
+    go.transform.localPosition = localSpawnPos;
 
-        GameObject go = Instantiate(fishPrefab, fishContainer);
-        Vector3 pos = new Vector3(Random.Range(swimRect.xMin, swimRect.xMax), Random.Range(swimRect.yMin, swimRect.yMax), 0f);
-        go.transform.position = pos;
-
-        var fm = go.GetComponent<FishMovement>();
+    var fm = go.GetComponent<FishMovement>();
+    if (fm != null) {
         fm.Initialize(pick, weight, swimRect);
         activeFish.Add(fm);
     }
+}
 
     private void OnFishLanded()
     {
-        if (currentCaughtFishes.Count > 0)
-        {
-            OnPullSuccess();
-        }
+        if (currentCaughtFishes.Count > 0) OnPullSuccess();
     }
 }
